@@ -1,34 +1,20 @@
-FROM postgres:13-alpine
+FROM postgres:13-bookworm
 
-ENV PGROONGA_VERSION=3.2.5 \
-    GROONGA_VERSION=14.1.1
-
-COPY alpine/build.sh /
+ENV PGROONGA_VERSION=3.2.5-1
 RUN \
-  apk add --no-cache --virtual=.build-dependencies \
-    apache-arrow-dev \
-    build-base \
-    clang19-dev \
-    cmake \
-    gettext-dev \
-    linux-headers \
-    llvm19 \
-    lz4-dev \
-    msgpack-c-dev \
-    rapidjson-dev \
-    ruby \
-    samurai \
-    xsimd-dev \
-    xxhash-dev \
-    zlib-dev \
-    zstd-dev && \
-  /build.sh ${PGROONGA_VERSION} ${GROONGA_VERSION} && \
-  rm -f build.sh && \
-  apk del .build-dependencies && \
-  apk add --no-cache \
-    libarrow \
-    libgomp \
-    libxxhash \
-    msgpack-c \
-    zlib \
-    zstd
+  apt update && \
+  apt install -y -V lsb-release wget && \
+  wget https://apache.jfrog.io/artifactory/arrow/debian/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \
+  apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \
+  rm apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \
+  wget https://packages.groonga.org/debian/groonga-apt-source-latest-$(lsb_release --codename --short).deb && \
+  apt install -y -V ./groonga-apt-source-latest-$(lsb_release --codename --short).deb && \
+  rm groonga-apt-source-latest-$(lsb_release --codename --short).deb && \
+  apt update && \
+  apt install -y -V \
+    postgresql-13-pgdg-pgroonga=${PGROONGA_VERSION} \
+    groonga-normalizer-mysql \
+    groonga-token-filter-stem \
+    groonga-tokenizer-mecab && \
+  apt clean && \
+  rm -rf /var/lib/apt/lists/*
